@@ -1,46 +1,48 @@
 import requests
 import logging
-import time
 
-# Setup logging
-logging.basicConfig(filename='weather_data_log.log', level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
+# Setup console logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s:%(levelname)s:%(message)s')
 
-def fetch_weather_data(api_key, city):
-    """
-    Fetches real-time weather data from OpenWeatherMap API.
-    Args:
-        api_key (str): The API key for OpenWeatherMap.
-        city (str): The name of the city for which to fetch weather data.
-    Returns:
-        dict: Weather data in JSON format, or None if an error occurs.
-    """
-    base_url = "http://api.openweathermap.org/data/2.5/weather"
+def fetch_weather_data(api_key, zip_code, country_code):
+    """Fetches current weather data using OpenWeatherMap API 2.5."""
+    weather_url = "https://api.openweathermap.org/data/2.5/weather"
     params = {
-        'q': city,
+        'zip': f'{zip_code},{country_code}',
         'appid': api_key,
         'units': 'metric'
     }
     try:
-        response = requests.get(base_url, params=params)
+        response = requests.get(weather_url, params=params)
         response.raise_for_status()
-        data = response.json()
-        logging.info("Weather data fetched successfully for {}".format(city))
-        return data
-    except requests.HTTPError as http_err:
-        logging.error(f'HTTP error occurred: {http_err}')
+        return response.json()
     except Exception as e:
-        logging.error(f'Error occurred: {e}')
+        logging.error(f"Error occurred: {e}")
+        return None
+
+def display_weather_info(weather_data, zip_code):
+    """Display weather information in a user-friendly format."""
+    weather = weather_data['weather'][0]['description'].title()
+    temp = weather_data['main']['temp']
+    humidity = weather_data['main']['humidity']
+    wind_speed = weather_data['wind']['speed']
+
+    print(f"\nCurrent Weather for ZIP Code {zip_code}:")
+    print(f"Temperature: {temp}°C")
+    print(f"Weather: {weather}")
+    print(f"Humidity: {humidity}%")
+    print(f"Wind Speed: {wind_speed} meter/sec\n")
 
 def main():
-    api_key = 'YOUR_API_KEY'  # Replace with your OpenWeatherMap API Key
-    city = input("Please enter the name of the city: ")
+    api_key = 'your_api_key'  # Replace with your OpenWeatherMap API Key
+    zip_code = input("Please enter the zip code: ")
+    country_code = input("Please enter the country code: ")
+    weather_data = fetch_weather_data(api_key, zip_code, country_code)
 
-    while True:
-        weather_data = fetch_weather_data(api_key, city)
-        if weather_data:
-            print(weather_data)
-        time.sleep(3600)  # Fetch data every hour -adjust for frequency
+    if weather_data:
+        display_weather_info(weather_data, zip_code)
+    else:
+        logging.error("Failed to fetch weather data.")
 
 if __name__ == "__main__":
     main()
-
